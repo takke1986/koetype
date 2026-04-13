@@ -14,7 +14,7 @@ mkdir -p "$MACOS" "$RESOURCES"
 echo "🔨 $APP_NAME.app を構築中..."
 
 # ---- ランチャースクリプト ----
-cat > "$MACOS/AquaVoiceLocal" << SCRIPT
+cat > "$MACOS/KoeTypeLocal" << SCRIPT
 #!/bin/bash
 
 PROJECT_DIR="$PROJECT_DIR"
@@ -36,7 +36,7 @@ cd "\$PROJECT_DIR"
 exec "\$UV" run python main.py
 SCRIPT
 
-chmod +x "$MACOS/AquaVoiceLocal"
+chmod +x "$MACOS/KoeTypeLocal"
 
 # ---- Info.plist ----
 cat > "$BUNDLE/Contents/Info.plist" << 'PLIST'
@@ -46,7 +46,7 @@ cat > "$BUNDLE/Contents/Info.plist" << 'PLIST'
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>AquaVoiceLocal</string>
+    <string>KoeTypeLocal</string>
     <key>CFBundleIdentifier</key>
     <string>com.taketaka.koetype</string>
     <key>CFBundleName</key>
