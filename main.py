@@ -159,6 +159,21 @@ class AquaVoiceApp(rumps.App):
     # ---- メニューコールバック ----
 
     def toggle_claude(self, _sender) -> None:
+        # ONにするとき、APIキーが未設定なら入力ダイアログを出す
+        if not self.settings.claude_postprocess and not self.settings.anthropic_api_key:
+            response = rumps.Window(
+                title="Claude API キーを入力",
+                message="Anthropic APIキーを入力してください。\nhttps://console.anthropic.com/settings/keys",
+                default_text="sk-ant-...",
+                ok="保存",
+                cancel="キャンセル",
+                dimensions=(400, 24),
+            ).run()
+            if not response.clicked or not response.text.strip().startswith("sk-"):
+                rumps.notification("AquaVoice Local", "", "APIキーが未設定のため Claude後処理をONにできません")
+                return
+            self.settings.anthropic_api_key = response.text.strip()
+
         self.settings.claude_postprocess = not self.settings.claude_postprocess
         save_settings(self.settings)
         self._claude_item.title = self._claude_label()
