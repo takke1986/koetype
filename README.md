@@ -23,7 +23,7 @@ macOS用のローカル音声文字起こしアプリ。音声データは外部
 ### 1. リポジトリをクローン
 
 ```bash
-git clone https://github.com/takke1986/aquavoice-local.git
+git clone https://github.com/takke1986/koetype.git
 cd aquavoice-local
 ```
 
