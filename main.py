@@ -11,6 +11,14 @@ import threading
 import time
 from pathlib import Path
 
+try:
+    from ApplicationServices import AXIsProcessTrusted
+    def _has_accessibility() -> bool:
+        return bool(AXIsProcessTrusted())
+except ImportError:
+    def _has_accessibility() -> bool:
+        return False
+
 import numpy as np
 import pyperclip
 import rumps
@@ -64,10 +72,18 @@ class AquaVoiceApp(rumps.App):
         # モデルをバックグラウンドでロード（起動を遅らせない）
         threading.Thread(target=self._load_model, daemon=True).start()
 
-        # グローバルホットキー ⌘+Shift+Space
-        hk = keyboard.GlobalHotKeys({"<cmd>+<shift>+<space>": self._on_hotkey})
-        hk.daemon = True
-        hk.start()
+        # グローバルホットキー ⌘+Shift+Space（アクセシビリティ権限が必要）
+        if _has_accessibility():
+            hk = keyboard.GlobalHotKeys({"<cmd>+<shift>+<space>": self._on_hotkey})
+            hk.daemon = True
+            hk.start()
+        else:
+            self._status.title = "⚠️ アクセシビリティ権限が必要です"
+            rumps.notification(
+                "KoeType",
+                "権限が必要です",
+                "システム設定 → プライバシーとセキュリティ → アクセシビリティ と 入力監視 に KoeType を追加して再起動してください。",
+            )
 
     # ---- 内部ユーティリティ ----
 
