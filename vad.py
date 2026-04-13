@@ -1,6 +1,7 @@
 """Silero-VAD による音声区間検出と幻覚フィルター。"""
 
 import collections
+import unicodedata
 from typing import Optional
 
 import numpy as np
@@ -19,9 +20,47 @@ HALLUCINATIONS: frozenset[str] = frozenset({
     "ご視聴ありがとうございました", "字幕",
 })
 
+# 許可するUnicodeブロック（日本語・英語・記号のみ）
+_ALLOWED_SCRIPTS = {"HIRAGANA", "KATAKANA", "CJK", "LATIN", "DIGIT", "PUNCTUATION", "SPACE"}
+
+
+def _script(char: str) -> str:
+    """文字のUnicodeスクリプト種別を大まかに返す。"""
+    name = unicodedata.name(char, "")
+    if "HIRAGANA" in name:
+        return "HIRAGANA"
+    if "KATAKANA" in name:
+        return "KATAKANA"
+    if "CJK" in name:
+        return "CJK"
+    if "LATIN" in name:
+        return "LATIN"
+    cat = unicodedata.category(char)
+    if cat.startswith("N"):
+        return "DIGIT"
+    if cat.startswith("P") or cat.startswith("S"):
+        return "PUNCTUATION"
+    if cat.startswith("Z") or char in " \t\n":
+        return "SPACE"
+    return "OTHER"
+
+
+def _has_foreign_script(text: str, threshold: float = 0.3) -> bool:
+    """日本語・英語以外の文字が threshold 割以上なら True。"""
+    if not text:
+        return False
+    other = sum(1 for c in text if _script(c) == "OTHER")
+    return other / len(text) >= threshold
+
 
 def is_hallucination(text: str) -> bool:
-    return text.strip().lower() in HALLUCINATIONS
+    normalized = text.strip().lower()
+    if normalized in HALLUCINATIONS:
+        return True
+    if _has_foreign_script(normalized):
+        print(f"[VAD] 外国語スクリプト検出、スキップ: {repr(text)}")
+        return True
+    return False
 
 
 class VADProcessor:

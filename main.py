@@ -140,9 +140,15 @@ class AquaVoiceApp(rumps.App):
 
     def _transcribe_and_insert(self, audio: np.ndarray) -> None:
         terms = load_terms()
+        print(f"[Debug] 音声長: {len(audio)/SAMPLE_RATE:.2f}s, 推論中...")
         text = self.transcriber.transcribe(audio, SAMPLE_RATE)
+        print(f"[Debug] 認識結果: {repr(text)}")
 
-        if not text or is_hallucination(text):
+        if not text:
+            print("[Debug] 空文字のためスキップ")
+            return
+        if is_hallucination(text):
+            print(f"[Debug] ハルシネーション判定でスキップ: {repr(text)}")
             return
 
         # 専門用語置換
@@ -155,7 +161,9 @@ class AquaVoiceApp(rumps.App):
         )
         if self.settings.claude_postprocess and has_creds:
             try:
+                before = text
                 text = postprocess(text, list(terms.values()), self.settings)
+                print(f"[Claude] {self.settings.claude_provider}: {repr(before)} → {repr(text)}")
             except Exception as e:
                 print(f"[Claude] エラー: {e}")
 
