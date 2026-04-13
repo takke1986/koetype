@@ -28,5 +28,8 @@ class Transcriber:
         print("[Transcriber] ready.")
 
     def transcribe(self, audio: np.ndarray, sample_rate: int = 16000) -> str:
-        result = self._pipe({"array": audio.astype(np.float32), "sampling_rate": sample_rate})
+        result = self._pipe(
+            {"array": audio.astype(np.float32), "sampling_rate": sample_rate},
+            generate_kwargs={"max_new_tokens": 256},
+        )
         return result["text"].strip()
