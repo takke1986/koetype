@@ -1,6 +1,11 @@
-"""Claude API による文字起こし後処理。"""
+"""Claude API による文字起こし後処理。Anthropic直接 / Amazon Bedrock 両対応。"""
 
-import anthropic
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from config import Settings
 
 SYSTEM_PROMPT = """あなたは音声文字起こしの編集者です。
 以下のルールに従って文章を整えてください。
@@ -19,15 +24,22 @@ SYSTEM_PROMPT = """あなたは音声文字起こしの編集者です。
 整えた文章のみを返してください。説明や補足は不要です。"""
 
 
-def postprocess(text: str, terms: list[str], api_key: str) -> str:
-    client = anthropic.Anthropic(api_key=api_key)
-
+def postprocess(text: str, terms: list[str], settings: Settings) -> str:
     user_content = text
     if terms:
         user_content = f"【専門用語リスト】{', '.join(terms)}\n\n{text}"
 
+    if settings.claude_provider == "bedrock":
+        from anthropic import AnthropicBedrock
+        client = AnthropicBedrock(aws_region=settings.aws_region)
+        model = settings.bedrock_model_id
+    else:
+        import anthropic
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        model = "claude-haiku-4-5-20251001"  # 速度重視
+
     msg = client.messages.create(
-        model="claude-haiku-4-5-20251001",  # 速度重視
+        model=model,
         max_tokens=1024,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_content}],

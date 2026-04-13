@@ -54,6 +54,7 @@ class AquaVoiceApp(rumps.App):
             self._status,
             None,
             self._claude_item,
+            rumps.MenuItem("Claude後処理の設定...", callback=self.open_claude_settings),
             rumps.MenuItem("単語を登録...", callback=self.open_terms),
             None,
             rumps.MenuItem("終了", callback=rumps.quit_application),
@@ -148,9 +149,13 @@ class AquaVoiceApp(rumps.App):
         text = apply_terms(text, terms)
 
         # Claude後処理（オプション）
-        if self.settings.claude_postprocess and self.settings.anthropic_api_key:
+        has_creds = (
+            self.settings.claude_provider == "bedrock"
+            or bool(self.settings.anthropic_api_key)
+        )
+        if self.settings.claude_postprocess and has_creds:
             try:
-                text = postprocess(text, list(terms.values()), self.settings.anthropic_api_key)
+                text = postprocess(text, list(terms.values()), self.settings)
             except Exception as e:
                 print(f"[Claude] エラー: {e}")
 
@@ -159,24 +164,28 @@ class AquaVoiceApp(rumps.App):
     # ---- メニューコールバック ----
 
     def toggle_claude(self, _sender) -> None:
-        # ONにするとき、APIキーが未設定なら入力ダイアログを出す
-        if not self.settings.claude_postprocess and not self.settings.anthropic_api_key:
-            response = rumps.Window(
-                title="Claude API キーを入力",
-                message="Anthropic APIキーを入力してください。\nhttps://console.anthropic.com/settings/keys",
-                default_text="sk-ant-...",
-                ok="保存",
-                cancel="キャンセル",
-                dimensions=(400, 24),
-            ).run()
-            if not response.clicked or not response.text.strip().startswith("sk-"):
-                rumps.notification("AquaVoice Local", "", "APIキーが未設定のため Claude後処理をONにできません")
-                return
-            self.settings.anthropic_api_key = response.text.strip()
+        # ONにするとき、Anthropic直接の場合はAPIキーが必要
+        if not self.settings.claude_postprocess:
+            if self.settings.claude_provider == "anthropic" and not self.settings.anthropic_api_key:
+                response = rumps.Window(
+                    title="Claude API キーを入力",
+                    message="Anthropic APIキーを入力してください。\nhttps://console.anthropic.com/settings/keys\n\n※ Amazon Bedrockを使う場合は「Claude後処理の設定...」から変更できます。",
+                    default_text="sk-ant-...",
+                    ok="保存",
+                    cancel="キャンセル",
+                    dimensions=(400, 24),
+                ).run()
+                if not response.clicked or not response.text.strip().startswith("sk-"):
+                    rumps.notification("AquaVoice Local", "", "APIキーが未設定のため Claude後処理をONにできません")
+                    return
+                self.settings.anthropic_api_key = response.text.strip()
 
         self.settings.claude_postprocess = not self.settings.claude_postprocess
         save_settings(self.settings)
         self._claude_item.title = self._claude_label()
+
+    def open_claude_settings(self, _sender) -> None:
+        subprocess.Popen([sys.executable, str(Path(__file__).parent / "claude_settings_ui.py")])
 
     def open_terms(self, _sender) -> None:
         subprocess.Popen([sys.executable, str(Path(__file__).parent / "terms_ui.py")])

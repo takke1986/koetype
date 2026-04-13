@@ -13,6 +13,9 @@ TERMS_FILE = CONFIG_DIR / "terms.json"
 class Settings:
     claude_postprocess: bool = False
     anthropic_api_key: str = ""
+    claude_provider: str = "anthropic"  # "anthropic" or "bedrock"
+    aws_region: str = "us-east-1"
+    bedrock_model_id: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     vad_threshold: float = 0.5
     min_silence_ms: int = 800
 
