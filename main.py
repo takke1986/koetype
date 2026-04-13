@@ -21,7 +21,7 @@ from audio_capture import AudioCapture
 from config import apply_terms, load_settings, load_terms, save_settings
 from postprocess import postprocess
 from transcriber import Transcriber
-from vad import CHUNK_SAMPLES, VADProcessor, is_hallucination, remove_foreign_scripts
+from vad import CHUNK_SAMPLES, VADProcessor, is_hallucination
 
 SAMPLE_RATE = 16000
 
@@ -144,9 +144,6 @@ class AquaVoiceApp(rumps.App):
         print(f"[Debug] 音声長: {len(audio)/SAMPLE_RATE:.2f}s, 推論中...")
         text = self.transcriber.transcribe(audio, SAMPLE_RATE)
         print(f"[Debug] 認識結果: {repr(text)}")
-
-        # 外国語文字（アラビア語など）を除去
-        text = remove_foreign_scripts(text)
 
         if not text:
             print("[Debug] 空文字のためスキップ")
